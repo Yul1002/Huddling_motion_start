@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mission-flow-studio",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/yul/Desktop/huddling/261025_motion-start/out/mission-flow/project &&PATH=/opt/homebrew/bin:$PATH npx --yes hyperframes@0.8.198 preview --no-open --port 3002"],
+      "port": 3002
+    }
+    ,{
+      "name": "mission-flow-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/yul/Desktop/huddling/261025_motion-start/out/mission-flow/project-preview && PATH=/opt/homebrew/bin:$PATH npx --yes hyperframes@0.8.198 preview --no-open --port 3003"],
+      "port": 3003
+    }
+  ]
+}
