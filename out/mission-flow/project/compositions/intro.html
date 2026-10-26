@@ -1,0 +1,94 @@
+<!--
+  S1 글자 인트로 (0 · 100f) + S1 전체 motion-exit 100–104 (S2 폰 등장과 겹침 4f).
+  장면표: out/mission-flow/scenes.md 2차 수정 3. 승인된 스냅보드 _pose/pose.html과 같은 계산.
+  프레임 f = 영상 처음부터의 프레임 (30fps). 숫자 옆 주석 = docs 토큰 이름.
+-->
+<template>
+  <style>
+    @font-face { font-family: "Pretendard"; font-weight: 400; src: url("assets/assets/fonts/Pretendard-Regular.otf") format("opentype"); }
+    @font-face { font-family: "Pretendard"; font-weight: 600; src: url("assets/assets/fonts/Pretendard-SemiBold.otf") format("opentype"); }
+    @font-face { font-family: "Pretendard"; font-weight: 700; src: url("assets/assets/fonts/Pretendard-Bold.otf") format("opentype"); }
+    #root { position: absolute; inset: 0; font-family: "Pretendard", sans-serif; }
+    #intro-layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #intro-stack { display: flex; flex-direction: column; align-items: center; }
+    #intro-headline {
+      margin: 0; white-space: nowrap;
+      font-weight: 700; font-size: 78px; line-height: 95px; /* video-display 78/95 */
+      color: #18191b; /* video-text */
+    }
+    #intro-headline .accent { color: #3759de; } /* video-accent */
+    #intro-headline .w { display: inline-block; opacity: 0; transform-origin: 50% 50%; }
+    #intro-stack .gap-section { height: 67px; } /* video-space-section */
+    #intro-stack .gap-small { height: 34px; }   /* video-space-small */
+    #intro-stack .card-slot { opacity: 0; transform-origin: 50% 50%; }
+    /* 부품: 틀에 zoom 2.8 (video.md 5장). 흰 카드 그림자 Shadow/md 원값 → zoom으로 ×2.8 (0 11px 34px #00000014) */
+    #intro-stack .part { zoom: 2.8; border-radius: 12px; /* radius-card */ box-shadow: 0 4px 12px #00000014; /* Shadow/md ×2.8 by zoom */ }
+    #intro-stack iframe { display: block; border: 0; background: transparent; }
+  </style>
+  <div data-hf-id="hf-ypfn" id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-bm51" id="intro-layer">
+      <div data-hf-id="hf-1cta" id="intro-stack">
+        <p data-hf-id="hf-d9ab" id="intro-headline"><span data-hf-id="hf-vohj" class="w" id="intro-w1">오늘도</span> <span data-hf-id="hf-wc8r" class="w" id="intro-w2">하나씩,</span> <span data-hf-id="hf-muxt" class="w" id="intro-w3">내 <span data-hf-id="hf-9tek" class="accent">실력으로</span></span></p>
+        <div data-hf-id="hf-dcay" class="gap-section"></div>
+        <div data-hf-id="hf-elwe" class="card-slot" id="intro-c1"><div data-hf-id="hf-9bov" class="part"><iframe data-hf-id="hf-jn6d" src="assets/parts/skill-card-1.html" width="350" height="88" scrolling="no"></iframe></div></div>
+        <div data-hf-id="hf-3yem" class="gap-small"></div>
+        <div data-hf-id="hf-ansd" class="card-slot" id="intro-c2"><div data-hf-id="hf-xfgv" class="part"><iframe data-hf-id="hf-hmxs" src="assets/parts/skill-card-2.html" width="350" height="88" scrolling="no"></iframe></div></div>
+        <div data-hf-id="hf-cicy" class="gap-small"></div>
+        <div data-hf-id="hf-7ois" class="card-slot" id="intro-c3"><div data-hf-id="hf-x15u" class="part"><iframe data-hf-id="hf-7km7" src="assets/parts/skill-card-3.html" width="350" height="88" scrolling="no"></iframe></div></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      // ---- 곡선 (motion.md 1장) ----
+      function bez(x1, y1, x2, y2) {
+        return function (x) {
+          if (x <= 0) return 0; if (x >= 1) return 1;
+          let lo = 0, hi = 1, t = x;
+          for (let i = 0; i < 60; i++) {
+            t = (lo + hi) / 2;
+            const cx = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+            if (cx < x) lo = t; else hi = t;
+          }
+          return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+        };
+      }
+      const curveEnter = bez(0, 0, 0.3, 1);         // curve-enter
+      const curveExit = bez(0.4, 0.14, 1, 1);       // curve-exit
+      const curveStandard = bez(0.4, 0.14, 0.3, 1); // curve-standard
+      const prog = (f, start, dur, curve) => curve((f - start) / dur);
+      const enterP = (f, start) => prog(f, start, 6, curveEnter);        // motion-enter = duration-6 · curve-enter · 크기 0 → 1
+      const exitOp = (f, start) => 1 - prog(f, start, 4, curveExit);     // motion-exit = duration-4 · curve-exit (불투명 → 투명)
+      const lerp = (a, b, p) => a + (b - a) * p;
+      const $ = id => document.getElementById(id);
+      function applyEnter(el, p) { el.style.opacity = p; el.style.transform = `scale(${p})`; }
+
+      const START = 0, END = 104; // S1 0 · 100 + 퇴장 4 (motion-exit)
+      let fromDy = 0;
+
+      function render(f) {
+        applyEnter($('intro-w1'), enterP(f, 0));   // 단어 1 motion-enter 0–6
+        applyEnter($('intro-w2'), enterP(f, 18));  // hold-glance 6–18 → 단어 2
+        applyEnter($('intro-w3'), enterP(f, 36));  // hold-glance 24–36 → 단어 3
+        // 헤드라인: 프레임 가운데 → 묶음 맨 위 자리, motion-travel 54–66 (duration-12 · curve-standard)
+        $('intro-headline').style.transform = `translateY(${lerp(fromDy, 0, prog(f, 54, 12, curveStandard))}px)`;
+        applyEnter($('intro-c1'), enterP(f, 66));  // skill-card stagger duration-8: 66 · 74 · 82
+        applyEnter($('intro-c2'), enterP(f, 74));
+        applyEnter($('intro-c3'), enterP(f, 82));
+        $('intro-layer').style.opacity = f >= 100 ? exitOp(f, 100) : 1; // S1 전체 motion-exit 100–104
+      }
+
+      function build() {
+        // 헤드라인 시작 자리: 묶음 가운데(= 프레임 가운데)까지의 거리. 한 번만 잰다
+        const h = $('intro-headline'), stack = $('intro-stack');
+        fromDy = stack.offsetHeight / 2 - (h.offsetTop - stack.offsetTop + h.offsetHeight / 2);
+        const clock = { get f() { return this._f; }, set f(v) { this._f = v; render(Math.round(v * 1000) / 1000); }, _f: START };
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo(clock, { f: START }, { f: END, duration: (END - START) / 30, ease: 'none' }, 0); // 30fps
+        render(START);
+        window.__timelines["intro"] = tl;
+      }
+      document.fonts.ready.then(build);
+    })();
+  </script>
+</template>

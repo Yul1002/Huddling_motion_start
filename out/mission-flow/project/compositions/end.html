@@ -1,0 +1,108 @@
+<!--
+  S11 바탕 (369 · 6f) + S12 어두운 두 줄 타자 (375 · 148f) + S13 엔드 카드 (519 · 78f) → 597f.
+  장면표: out/mission-flow/scenes.md 2차 수정 3. 승인된 스냅보드 _pose/pose.html과 같은 계산.
+  프레임 f = 영상 처음부터의 프레임 (30fps). 숫자 옆 주석 = docs 토큰 이름.
+-->
+<template>
+  <style>
+    @font-face { font-family: "Pretendard"; font-weight: 600; src: url("assets/assets/fonts/Pretendard-SemiBold.otf") format("opentype"); }
+    @font-face { font-family: "Pretendard"; font-weight: 700; src: url("assets/assets/fonts/Pretendard-Bold.otf") format("opentype"); }
+    #root { position: absolute; inset: 0; font-family: "Pretendard", sans-serif; }
+    #end-bg { position: absolute; inset: 0; background: #18191b; /* video-end-bg */ opacity: 0; }
+    #end-roll-layer, #end-card-layer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .end-display { margin: 0; font-weight: 700; font-size: 78px; line-height: 95px; } /* video-display 78/95 */
+    #end-roll { color: #ffffff; /* video-end-text */ text-align: center; }
+    #end-roll .ln { display: block; min-height: 95px; white-space: pre; } /* 두 줄 자리 고정 · video-display 행간 95 */
+    #end-card { display: flex; flex-direction: column; align-items: center; transform-origin: 50% 50%; }
+    #end-card .row { display: flex; flex-direction: column; align-items: center; gap: 34px; } /* 1줄 ↔ 2줄 video-space-small */
+    #end-card .word { color: #ffffff; } /* video-end-text */
+    #end-card .logo { zoom: 2.8; } /* video.md 5장 ×2.8 → 417×53 */
+    #end-card iframe { display: block; border: 0; background: transparent; }
+    #end-card .sub { margin: 67px 0 0; /* 2줄 ↔ 3줄 video-space-section */ font-weight: 600; font-size: 39px; line-height: 56px; /* video-label 39/56 */ color: #75777c; /* video-text-muted */ }
+  </style>
+  <div data-hf-id="hf-gwfo" id="root" data-composition-id="end" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-5o70" id="end-bg"></div>
+    <div data-hf-id="hf-4kxg" id="end-roll-layer">
+      <p data-hf-id="hf-62z0" id="end-roll" class="end-display" data-layout-allow-overlap><span data-hf-id="hf-7lui" class="ln" id="end-top"></span><span data-hf-id="hf-0p2f" class="ln" id="end-line"></span></p>
+    </div>
+    <div data-hf-id="hf-4os7" id="end-card-layer">
+      <div data-hf-id="hf-gqsr" id="end-card" data-layout-allow-overlap>
+        <div data-hf-id="hf-thy4" class="row">
+          <p data-hf-id="hf-rcxu" class="end-display word">내 실력으로</p>
+          <div data-hf-id="hf-e319" class="logo"><iframe data-hf-id="hf-j1c8" src="assets/parts/logo.html?state=logotype-white" width="149" height="19" scrolling="no"></iframe></div>
+        </div>
+        <p data-hf-id="hf-1vkm" class="sub">반복 업무를 줄이는 AI 자동화</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      // ---- 곡선 (motion.md 1장) ----
+      function bez(x1, y1, x2, y2) {
+        return function (x) {
+          if (x <= 0) return 0; if (x >= 1) return 1;
+          let lo = 0, hi = 1, t = x;
+          for (let i = 0; i < 60; i++) {
+            t = (lo + hi) / 2;
+            const cx = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+            if (cx < x) lo = t; else hi = t;
+          }
+          return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+        };
+      }
+      const curveEnter = bez(0, 0, 0.3, 1);   // curve-enter
+      const curveExit = bez(0.4, 0.14, 1, 1); // curve-exit
+      const prog = (f, start, dur, curve) => curve((f - start) / dur);
+      const enterP = (f, start) => prog(f, start, 6, curveEnter);    // motion-enter = duration-6 · curve-enter · 크기 0 → 1
+      const exitOp = (f, start) => 1 - prog(f, start, 4, curveExit); // motion-exit = duration-4 · curve-exit (불투명 → 투명)
+      const $ = id => document.getElementById(id);
+
+      // 글자 타자 (motion.md 3장): 글자 등장 0f · 간격 hold-tick(4f). 띄어쓰기는 세지 않고 다음 글자와 함께 나온다
+      function typed(text, start, f) {
+        if (f < start) return '';
+        const n = Math.floor((f - start) / 4) + 1; // hold-tick
+        let out = '', k = 0;
+        for (const ch of text) {
+          if (ch === ' ') { out += ch; continue; }
+          if (k >= n) break;
+          out += ch; k++;
+        }
+        return out.replace(/ +$/, '');
+      }
+      const TOP = '이번 달 미션,', L2 = '적용 사례 정리하기', L3 = '내 자산에 등록됐어요';
+
+      function rollState(f) {
+        $('end-top').textContent = typed(TOP, 375, f);        // ① 375 · 379 · … · 395
+        const line = $('end-line'); line.style.opacity = 1;
+        if (f < 463) {
+          line.textContent = typed(L2, 407, f);                // ② hold-glance 395–407 → 407 · … · 435 → hold-read 435–459
+          if (f >= 459) line.style.opacity = exitOp(f, 459);   // 아랫줄 motion-exit 459–463
+        } else {
+          line.textContent = typed(L3, 463, f);                // ③ 463 · … · 495 → hold-read 495–519
+        }
+      }
+
+      const START = 369, END = 597; // S11 시작 ~ S13 끝
+      function render(f) {
+        $('end-bg').style.opacity = f < 375 ? prog(f, 369, 6, curveEnter) : 1; // S11 바탕 투명 → 불투명만 (duration-6 · curve-enter)
+        const roll = $('end-roll-layer'), card = $('end-card-layer');
+        if (f < 375) { roll.style.display = 'none'; card.style.display = 'none'; return; } // S11: 글자 없음
+        if (f < 523) { roll.style.display = 'flex'; rollState(Math.min(f, 518)); roll.style.opacity = f >= 519 ? exitOp(f, 519) : 1; } // S12 두 줄 motion-exit 519–523
+        else roll.style.display = 'none';
+        if (f >= 519) { // S13: motion-enter 519–525 → hold-end 525–597
+          card.style.display = 'flex';
+          const p = enterP(f, 519); $('end-card').style.opacity = p; $('end-card').style.transform = `scale(${p})`;
+        } else card.style.display = 'none';
+      }
+
+      function build() {
+        const clock = { get f() { return this._f; }, set f(v) { this._f = v; render(Math.round(v * 1000) / 1000); }, _f: START };
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo(clock, { f: START }, { f: END, duration: (END - START) / 30, ease: 'none' }, 0); // 30fps
+        render(START);
+        window.__timelines["end"] = tl;
+      }
+      document.fonts.ready.then(build);
+    })();
+  </script>
+</template>

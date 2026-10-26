@@ -1,0 +1,160 @@
+<!--
+  S2 ~ S11 폰 흐름 (100 → 375f): 폰 등장 · 뛰어들기 · 부품 · 빠지기 · 화면 교체 · 밀기 · 폰 퇴장.
+  장면표: out/mission-flow/scenes.md 2차 수정 3. 승인된 스냅보드 _pose/pose.html과 같은 계산.
+  프레임 f = 영상 처음부터의 프레임 (30fps). 숫자 옆 주석 = docs 토큰 이름.
+  화면 이미지 안 자리(부품 위치)는 src/screens 이미지(780×1688)에서 잰 px이다 (토큰 아님, "잰 값").
+-->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    #flow-phone-layer, #flow-part-layer { position: absolute; inset: 0; }
+    #flow-part-layer { display: flex; align-items: center; justify-content: center; }
+    #flow-cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    /* 폰 프레임 (video.md 4장) */
+    .flow-phone {
+      position: absolute;
+      left: calc((1920px - 453px) / 2); top: calc((1080px - 952px) / 2); /* 프레임 가운데 · video-phone-size 453×952 */
+      width: 453px; height: 952px;           /* video-phone-size */
+      box-sizing: border-box;
+      padding: 12px;                          /* video-phone-bezel 12 */
+      background: #18191b;                    /* video-phone-bezel 색 = color-text */
+      border-radius: 64px;                    /* video-phone-radius 바깥 */
+      box-shadow: 0 22px 67px #0000001F;      /* video-phone-shadow = Shadow/lg ×2.8 */
+    }
+    .flow-phone img { position: absolute; left: 12px; top: 12px; /* video-phone-bezel */ width: 429px; height: 928px; /* video-phone-screen */ border-radius: 52px; /* video-phone-radius 화면 */ }
+    /* 부품: 틀에 zoom 2.8 (video.md 5장) */
+    #flow-part-layer .part { zoom: 2.8; }
+    #flow-part-layer .part.card { border-radius: 12px; /* radius-card */ box-shadow: 0 4px 12px #00000014; /* Shadow/md ×2.8 by zoom */ }
+    #flow-part-layer iframe { display: block; border: 0; background: transparent; }
+  </style>
+  <div data-hf-id="hf-5cgv" id="root" data-composition-id="flow" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-l2qq" id="flow-phone-layer">
+      <div data-hf-id="hf-oxyy" id="flow-cam" data-layout-allow-overflow>
+        <div data-hf-id="hf-wl41" class="flow-phone" id="flow-phone-out"><img data-hf-id="hf-v78y" src="assets/screens/01-home.png" alt=""></div>
+        <div data-hf-id="hf-hlqi" class="flow-phone" id="flow-phone">
+          <img data-hf-id="hf-jlk2" id="flow-img-01-home" src="assets/screens/01-home.png" alt="">
+          <img data-hf-id="hf-5me2" id="flow-img-03-mission" src="assets/screens/03-mission.png" alt="">
+          <img data-hf-id="hf-wniw" id="flow-img-04-approved" src="assets/screens/04-approved.png" alt="">
+        </div>
+      </div>
+    </div>
+    <div data-hf-id="hf-m8xh" id="flow-part-layer">
+      <div data-hf-id="hf-pp0t" id="flow-mover">
+        <div data-hf-id="hf-pnpr" class="part card" id="flow-p-mission"><iframe data-hf-id="hf-uq87" id="flow-if-mission" src="assets/parts/mission-card.html" width="350" height="253" scrolling="no"></iframe></div>
+        <div data-hf-id="hf-m9rf" class="part" id="flow-p-button"><iframe data-hf-id="hf-s7vx" src="assets/parts/button-submit.html?state=submit" width="350" height="44" scrolling="no"></iframe></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      // ---- 곡선 (motion.md 1장) ----
+      function bez(x1, y1, x2, y2) {
+        return function (x) {
+          if (x <= 0) return 0; if (x >= 1) return 1;
+          let lo = 0, hi = 1, t = x;
+          for (let i = 0; i < 60; i++) {
+            t = (lo + hi) / 2;
+            const cx = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+            if (cx < x) lo = t; else hi = t;
+          }
+          return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+        };
+      }
+      const curveEnter = bez(0, 0, 0.3, 1);         // curve-enter
+      const curveExit = bez(0.4, 0.14, 1, 1);       // curve-exit
+      const curveStandard = bez(0.4, 0.14, 0.3, 1); // curve-standard
+      const curveLinear = x => Math.min(1, Math.max(0, x)); // curve-linear
+      const prog = (f, start, dur, curve) => curve((f - start) / dur);
+      const enterP = (f, start) => prog(f, start, 6, curveEnter);    // motion-enter = duration-6 · curve-enter · 크기 0 → 1
+      const exitOp = (f, start) => 1 - prog(f, start, 4, curveExit); // motion-exit = duration-4 · curve-exit (불투명 → 투명)
+      const lerp = (a, b, p) => a + (b - a) * p;
+      const lerpPt = (A, B, p) => ({ x: lerp(A.x, B.x, p), y: lerp(A.y, B.y, p) });
+      const $ = id => document.getElementById(id);
+
+      // ---- 화면 이미지 안 자리 (잰 값) ----
+      const IMG_W = 780;                                            // src/screens 원본 폭 (video.md 4장)
+      const HOME_CARD = { x0: 40, x1: 740, y0: 588, y1: 1094 };     // 01-home 미션 카드 (잰 값)
+      const MISSION_BTN = { x0: 40, x1: 740, y0: 1506, y1: 1594 };  // 03-mission "제출하기" 버튼 (잰 값)
+      const APPROVED_BTN = { x0: 40, x1: 740, y0: 1336, y1: 1424 }; // 04-approved "내 자산에서 보기" 버튼 (잰 값)
+      const SCREEN_MAX = 1.82;   // video.md 4장 화면 이미지 한계 ×1.82
+      const PART_W = 980;        // mission-card · button-submit 영상 폭 (video.md 5장)
+      const C = { x: 960, y: 540 }; // 프레임 가운데 (1920×1080 / 2)
+
+      function layers(phoneOn, partOn, partOp = 1) {
+        $('flow-phone-layer').style.display = phoneOn ? 'block' : 'none';
+        $('flow-part-layer').style.display = partOn ? 'flex' : 'none';
+        $('flow-part-layer').style.opacity = partOp;
+      }
+      function spot(box) {
+        const left = (1920 - 429) / 2, top = (1080 - 928) / 2, k = 429 / IMG_W; // video-phone-screen, 폰 가운데
+        return { x: left + (box.x0 + box.x1) / 2 * k, y: top + (box.y0 + box.y1) / 2 * k, w: (box.x1 - box.x0) * k };
+      }
+      function cam(s, P, Q) { $('flow-cam').style.transform = `translate(${Q.x - s * P.x}px, ${Q.y - s * P.y}px) scale(${s})`; }
+      function onlyPart(id) { ['flow-p-mission', 'flow-p-button'].forEach(p => $(p).style.display = p === id ? 'block' : 'none'); }
+      function mover(scale, dx = 0, dy = 0) { $('flow-mover').style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; }
+      function phone(name, op = 1, sc = 1) {
+        ['01-home', '03-mission', '04-approved'].forEach(n => $('flow-img-' + n).style.display = n === name ? 'block' : 'none');
+        const ph = $('flow-phone'); ph.style.opacity = op; ph.style.transform = `scale(${sc})`;
+      }
+      function missionState(progress, text) {
+        try {
+          const d = $('flow-if-mission').contentDocument;
+          d.getElementById('mission-card-progress-fill').style.setProperty('--progress', progress);
+          d.getElementById('mission-card-progress-text').textContent = text;
+        } catch (e) { /* 부품이 아직 안 열림 */ }
+      }
+      // 부품 속으로 뛰어들기 / 빠지기 (motion.md 5장). p: 0 = 폰 전체, 1 = 부품 980이 프레임 가운데
+      function diveState(box, name, partId, p) {
+        const P = spot(box), S = PART_W / P.w; // S: 부품이 980이 되는 카메라 크기 (계산값)
+        const s = lerp(1, S, p), Q = lerpPt(P, C, p);
+        if (s <= SCREEN_MAX) { layers(true, false); phone(name); cam(s, P, Q); } // ×1.82 안에서는 화면 이미지
+        else { layers(false, true); onlyPart(partId); mover(s / S, Q.x - C.x, Q.y - C.y); } // 넘으면 부품으로 바꿔 이음
+      }
+      function pushState(f) { // S10 천천히 밀기 345–369 · duration-24 · curve-standard · 1 → 1.5
+        const P = spot(APPROVED_BTN), pp = prog(f, 345, 24, curveStandard);
+        cam(lerp(1, 1.5, pp), P, lerpPt(P, C, pp));
+      }
+
+      const START = 100, END = 375; // S2 시작 ~ S11 끝
+      function render(f) {
+        $('flow-cam').style.transform = 'none';
+        $('flow-phone-out').style.display = 'none';
+        missionState(0.5, '50% · 2/4 단계 완료'); // --progress 0.5 (기본)
+
+        if (f < 154) { // S2 (100 · 54): 폰 motion-enter 100–106 → hold-screen
+          const p = enterP(f, 100); layers(true, false); phone('01-home', p, p);
+        } else if (f < 158) { // S3 (154 · 4): 뛰어들기 duration-4 · curve-exit
+          diveState(HOME_CARD, '01-home', 'flow-p-mission', prog(f, 154, 4, curveExit));
+        } else if (f < 182) { // S4 (158 · 24): hold-read
+          layers(false, true); onlyPart('flow-p-mission'); mover(1);
+        } else if (f < 209) { // S5 (182 · 27): 진행 바 motion-travel 182–194 → 글자 motion-swap 194–197 → hold-glance
+          layers(false, true); onlyPart('flow-p-mission'); mover(1);
+          missionState(lerp(0.5, 1, prog(f, 182, 12, curveStandard)), f >= 194 ? '100% · 4/4 단계 완료' : '50% · 2/4 단계 완료');
+        } else if (f < 221) { // S6 (209 · 12): 빠지기 duration-12 · curve-standard (부품은 100% 그대로)
+          missionState(1, '100% · 4/4 단계 완료');
+          diveState(HOME_CARD, '01-home', 'flow-p-mission', 1 - prog(f, 209, 12, curveStandard));
+        } else if (f < 269) { // S7 (221 · 48): hold-screen
+          layers(true, false); phone('01-home');
+        } else if (f < 323) { // S8 (269 · 54): S7 motion-exit 269–273 + 03 motion-enter 269–275 → 아주 느리게 밀기 275–323 (curve-linear · 1 → 1.05)
+          const p = enterP(f, 269); layers(true, false); phone('03-mission', p, p);
+          cam(lerp(1, 1.05, prog(f, 275, 48, curveLinear)), C, C);
+          if (f < 273) { const o = $('flow-phone-out'); o.style.display = 'block'; o.style.opacity = exitOp(f, 269); }
+        } else if (f < 327) { // S9 (323 · 4): 뛰어들기
+          diveState(MISSION_BTN, '03-mission', 'flow-p-button', prog(f, 323, 4, curveExit));
+        } else if (f < 369) { // S10 (327 · 42): 버튼 motion-exit 327–331 + 폰 motion-enter 327–333 → hold-glance → 밀기 345–369
+          const p = enterP(f, 327); phone('04-approved', p, p); pushState(f);
+          if (f < 331) { layers(true, true, exitOp(f, 327)); onlyPart('flow-p-button'); mover(1); }
+          else layers(true, false);
+        } else { // S11 (369 · 6): 폰 motion-exit 369–373 (밀기 끝 상태). 바탕은 end 장면이 맡음
+          layers(true, false); phone('04-approved', exitOp(f, 369)); pushState(369);
+        }
+      }
+
+      const clock = { get f() { return this._f; }, set f(v) { this._f = v; render(Math.round(v * 1000) / 1000); }, _f: START };
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo(clock, { f: START }, { f: END, duration: (END - START) / 30, ease: 'none' }, 0); // 30fps
+      render(START);
+      window.__timelines["flow"] = tl;
+    })();
+  </script>
+</template>

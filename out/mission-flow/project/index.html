@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  mission-flow — 허들링 클럽 미션 흐름 영상. 1920×1080 · 30fps · 597f (19.9초).
+  장면표: out/mission-flow/scenes.md 2차 수정 3 (S1~S13). 스냅보드: out/mission-flow/snapboard/ (_pose/pose.html).
+  장면 묶음 (프레임 → 초 = f / 30):
+    intro  S1 + S1 퇴장          0 → 104f   (0 · 3.466667s)
+    flow   S2 ~ S11 폰 퇴장      100 → 375f (3.333333 · 9.166667s)
+    end    S11 바탕 ~ S13 끝     369 → 597f (12.3 · 7.6s)
+  칠하는 순서: end(1) < intro(2) < flow(3). 폰이 S1 위로 들어오고, S11에서 폰이 어두운 바탕 위로 빠진다.
+-->
+<html lang="ko" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #f7f7f8; /* video-bg */ }
+      #root { position: relative; width: 100%; height: 100%; background: #f7f7f8; /* video-bg */ }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-o6wv" id="root" data-composition-id="main" data-start="0" data-duration="19.9" data-fps="30" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-0bds" id="end" class="clip" data-composition-id="end" data-composition-src="compositions/end.html"
+        data-start="12.3" data-duration="7.6" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 1"></div>
+      <div data-hf-id="hf-qpxo" id="intro" class="clip" data-composition-id="intro" data-composition-src="compositions/intro.html"
+        data-start="0" data-duration="3.466667" data-track-index="2" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-0vdk" id="flow" class="clip" data-composition-id="flow" data-composition-src="compositions/flow.html"
+        data-start="3.333333" data-duration="9.166667" data-track-index="3" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 3"></div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

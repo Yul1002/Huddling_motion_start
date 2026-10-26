@@ -1,0 +1,284 @@
+<!doctype html>
+<!--
+  mission-flow 스냅보드 포즈 파일. ?f=<프레임> 으로 열면 그 프레임의 정지 화면이 된다 (30fps, 영상 처음부터).
+  장면표: out/mission-flow/scenes.md 2차 (S1~S13, 597f, 수정 3).
+  숫자는 docs 토큰 값만 쓰고 옆에 토큰 이름을 단다. 화면 이미지 안 자리(부품 위치)는 src/screens 이미지에서 잰 px이다 (토큰 아님, "잰 값"으로 표시).
+  src 파일은 읽기만 한다 (상대 경로 ../../../../src/...).
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>mission-flow pose</title>
+<style>
+  @font-face { font-family: "Pretendard"; font-weight: 400; src: url("../../../../src/assets/fonts/Pretendard-Regular.otf") format("opentype"); }
+  @font-face { font-family: "Pretendard"; font-weight: 600; src: url("../../../../src/assets/fonts/Pretendard-SemiBold.otf") format("opentype"); }
+  @font-face { font-family: "Pretendard"; font-weight: 700; src: url("../../../../src/assets/fonts/Pretendard-Bold.otf") format("opentype"); }
+  :root {
+    --video-bg: #f7f7f8;          /* video-bg = color-surface */
+    --video-end-bg: #18191b;      /* video-end-bg = color-text */
+    --video-text: #18191b;        /* video-text */
+    --video-text-muted: #75777c;  /* video-text-muted */
+    --video-accent: #3759de;      /* video-accent */
+    --video-end-text: #ffffff;    /* video-end-text */
+  }
+  html, body { margin: 0; }
+  body { width: 1920px; height: 1080px; overflow: hidden; background: var(--video-bg); font-family: "Pretendard", sans-serif; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--video-bg); }
+  #endbg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: var(--video-end-bg); opacity: 0; }
+  .layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+  .layer:not(.on) { display: none !important; }
+  .layer.also { display: flex !important; }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* 부품: 틀에 zoom 2.8 (video.md 5장). 움직임은 바깥 .mover의 transform */
+  .part { zoom: 2.8; } /* video.md 5장 ×2.8 */
+  .part iframe { display: block; border: 0; background: transparent; }
+  /* 흰 카드 부품 그림자: Shadow/md 원값, zoom 2.8로 ×2.8이 된다 (0 11px 34px #00000014) · 모서리 radius-card */
+  .part.card { border-radius: 12px; /* radius-card */ box-shadow: 0 4px 12px #00000014; /* Shadow/md ×2.8 by zoom */ }
+
+  /* 폰 프레임 (video.md 4장) */
+  #phone, #phone-out {
+    position: absolute;
+    left: calc((1920px - 453px) / 2); top: calc((1080px - 952px) / 2); /* 프레임 가운데 · video-phone-size 453×952 */
+    width: 453px; height: 952px;           /* video-phone-size */
+    box-sizing: border-box;
+    padding: 12px;                          /* video-phone-bezel 12 */
+    background: #18191b;                    /* video-phone-bezel 색 = color-text */
+    border-radius: 64px;                    /* video-phone-radius 바깥 */
+    box-shadow: 0 22px 67px #0000001F;      /* video-phone-shadow = Shadow/lg ×2.8 */
+  }
+  #phone img, #phone-out img { display: block; width: 429px; height: 928px; /* video-phone-screen */ border-radius: 52px; /* video-phone-radius 화면 */ }
+  #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+
+  /* 글자 (video.md 3장) */
+  .display { font-weight: 700; font-size: 78px; line-height: 95px; margin: 0; } /* video-display 78/95 */
+  .label { font-weight: 600; font-size: 39px; line-height: 56px; margin: 0; }   /* video-label 39/56 */
+  #headline { color: var(--video-text); white-space: nowrap; }
+  #headline .accent { color: var(--video-accent); }
+  .w { display: inline-block; opacity: 0; transform-origin: 50% 50%; }
+  #s1-stack .gap-section { height: 67px; } /* video-space-section */
+  #s1-stack .gap-small { height: 34px; }   /* video-space-small */
+  .card-slot { opacity: 0; transform-origin: 50% 50%; }
+
+  #roll { color: var(--video-end-text); text-align: center; }
+  #roll .ln { display: block; min-height: 95px; white-space: pre; } /* 두 줄 자리 고정 · video-display 행간 95 */
+  #phone-out { display: none; }
+  #endcard .row { display: flex; flex-direction: column; align-items: center; gap: 34px; } /* 1줄 ↔ 2줄 video-space-small */
+  #endcard .word { color: var(--video-end-text); }
+  #endcard .sub { color: var(--video-text-muted); margin-top: 67px; } /* 2줄 ↔ 3줄 video-space-section */
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="endbg"></div>
+
+  <!-- S1 글자 인트로: 헤드라인 + skill-card-1~3 세로 묶음 -->
+  <div id="L-s1" class="layer center">
+    <div id="s1-stack" class="center">
+      <p id="headline" class="display"><span class="w" id="w1">오늘도</span> <span class="w" id="w2">하나씩,</span> <span class="w" id="w3">내 <span class="accent">실력으로</span></span></p>
+      <div class="gap-section"></div>
+      <div class="card-slot" id="c1"><div class="part card"><iframe src="../../../../src/parts/skill-card-1.html" width="350" height="88" scrolling="no"></iframe></div></div>
+      <div class="gap-small"></div>
+      <div class="card-slot" id="c2"><div class="part card"><iframe src="../../../../src/parts/skill-card-2.html" width="350" height="88" scrolling="no"></iframe></div></div>
+      <div class="gap-small"></div>
+      <div class="card-slot" id="c3"><div class="part card"><iframe src="../../../../src/parts/skill-card-3.html" width="350" height="88" scrolling="no"></iframe></div></div>
+    </div>
+  </div>
+
+  <!-- 폰 장면 (카메라 = #cam 의 scale · x · y만, motion.md 5장) -->
+  <div id="L-phone" class="layer">
+    <div id="cam">
+      <div id="phone-out"><img id="screen-out" src="../../../../src/screens/01-home.png" alt=""></div>
+      <div id="phone"><img id="screen" src="../../../../src/screens/01-home.png" alt=""></div>
+    </div>
+  </div>
+
+  <!-- 부품 단독 장면 -->
+  <div id="L-part" class="layer center">
+    <div id="mover">
+      <div class="part card" id="p-mission"><iframe id="if-mission" src="../../../../src/parts/mission-card.html" width="350" height="253" scrolling="no"></iframe></div>
+      <div class="part" id="p-button"><iframe src="../../../../src/parts/button-submit.html?state=submit" width="350" height="44" scrolling="no"></iframe></div>
+    </div>
+  </div>
+
+  <!-- S12 어두운 두 줄 타자 -->
+  <div id="L-roll" class="layer center">
+    <p id="roll" class="display"><span class="ln" id="roll-top"></span><span class="ln" id="roll-line"></span></p>
+  </div>
+
+  <!-- S13 엔드 카드 -->
+  <div id="L-end" class="layer center">
+    <div id="endcard" class="center">
+      <div class="row">
+        <p class="display word">내 실력으로</p>
+        <div class="part"><iframe src="../../../../src/parts/logo.html?state=logotype-white" width="149" height="19" scrolling="no"></iframe></div>
+      </div>
+      <p class="label sub">반복 업무를 줄이는 AI 자동화</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- 곡선 (motion.md 1장) ----
+function bez(x1, y1, x2, y2) {
+  return function (x) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 60; i++) {
+      t = (lo + hi) / 2;
+      const cx = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+      if (cx < x) lo = t; else hi = t;
+    }
+    return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+  };
+}
+const curveEnter = bez(0, 0, 0.3, 1);         // curve-enter
+const curveExit = bez(0.4, 0.14, 1, 1);       // curve-exit
+const curveStandard = bez(0.4, 0.14, 0.3, 1); // curve-standard
+const curveLinear = x => Math.min(1, Math.max(0, x)); // curve-linear
+const prog = (f, start, dur, curve) => curve((f - start) / dur);
+// motion-enter: duration-6 · curve-enter · 크기 0 → 1, 투명 → 불투명 (motion.md 2장, 새 후보 ⑦)
+const enterP = (f, start) => prog(f, start, 6, curveEnter);
+function applyEnter(el, p) { el.style.opacity = p; el.style.transform = `scale(${p})`; }
+// motion-exit: duration-4 · curve-exit · 사라짐 (모양은 docs에 없어 불투명 → 투명만)
+const exitP = (f, start) => prog(f, start, 4, curveExit);
+const exitOp = (f, start) => 1 - exitP(f, start);
+
+// ---- 화면 이미지 안 자리 (src/screens 780×1688 에서 잰 px, 토큰 아님) ----
+const IMG_W = 780;                                            // src/screens 원본 폭 (video.md 4장)
+const HOME_CARD = { x0: 40, x1: 740, y0: 588, y1: 1094 };     // 01-home 미션 카드 (잰 값)
+const MISSION_BTN = { x0: 40, x1: 740, y0: 1506, y1: 1594 };  // 03-mission "제출하기" 버튼 (잰 값)
+const APPROVED_BTN = { x0: 40, x1: 740, y0: 1336, y1: 1424 }; // 04-approved "내 자산에서 보기" 버튼 (잰 값)
+const SCREEN_MAX = 1.82;   // video.md 4장 화면 이미지 한계 ×1.82
+const PART_W = 980;        // mission-card · button-submit 영상 폭 (video.md 5장)
+
+const $ = id => document.getElementById(id);
+const C = { x: 960, y: 540 }; // 프레임 가운데 (1920×1080 / 2)
+const SRC = n => `../../../../src/screens/${n}.png`;
+
+function show(layer) {
+  document.querySelectorAll('.layer').forEach(l => { l.classList.toggle('on', l.id === layer); l.classList.remove('also'); l.style.opacity = 1; });
+}
+// 겹침 4f: 나가는 층을 함께 보이고 불투명도만 내린다
+function also(layer, op) { const l = $(layer); l.classList.add('also'); l.style.opacity = op; }
+function screenRect() { return { left: (1920 - 429) / 2, top: (1080 - 928) / 2, w: 429 }; } // video-phone-screen, 폰 가운데
+function spot(box) {
+  const r = screenRect(), k = r.w / IMG_W;
+  return { x: r.left + (box.x0 + box.x1) / 2 * k, y: r.top + (box.y0 + box.y1) / 2 * k, w: (box.x1 - box.x0) * k };
+}
+function cam(s, P, Q) { $('cam').style.transform = `translate(${Q.x - s * P.x}px, ${Q.y - s * P.y}px) scale(${s})`; }
+const lerp = (a, b, p) => a + (b - a) * p;
+const lerpPt = (A, B, p) => ({ x: lerp(A.x, B.x, p), y: lerp(A.y, B.y, p) });
+function onlyPart(id) { ['p-mission', 'p-button'].forEach(p => $(p).style.display = p === id ? 'block' : 'none'); }
+function mover(scale, dx = 0, dy = 0, op = 1) { const m = $('mover'); m.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; m.style.opacity = op; }
+function phone(name, op = 1, sc = 1) {
+  show('L-phone'); $('screen').src = SRC(name);
+  const ph = $('phone'); ph.style.opacity = op; ph.style.transform = `scale(${sc})`;
+}
+function missionState(progress, text) {
+  try {
+    const d = $('if-mission').contentDocument;
+    d.getElementById('mission-card-progress-fill').style.setProperty('--progress', progress);
+    d.getElementById('mission-card-progress-text').textContent = text;
+  } catch (e) { document.title = 'iframe-blocked'; }
+}
+function diveState(box, name, partId, p) {
+  const P = spot(box), S = PART_W / P.w; // S: 부품이 980이 되는 카메라 크기 (계산값)
+  const s = lerp(1, S, p), Q = lerpPt(P, C, p);
+  if (s <= SCREEN_MAX) { phone(name); cam(s, P, Q); }
+  else { show('L-part'); onlyPart(partId); mover(s / S, Q.x - C.x, Q.y - C.y); }
+}
+function pushState(f) { // S10 천천히 밀기 345–369 · duration-24 · curve-standard · 1 → 1.5
+  const P = spot(APPROVED_BTN), pp = prog(f, 345, 24, curveStandard);
+  cam(lerp(1, 1.5, pp), P, lerpPt(P, C, pp));
+}
+// 글자 타자 (motion.md 3장): 글자 등장 0f · 간격 hold-tick(4f). 띄어쓰기는 세지 않고 다음 글자와 함께 나온다
+function typed(text, start, f) {
+  if (f < start) return '';
+  const n = Math.floor((f - start) / 4) + 1; // hold-tick
+  let out = '', k = 0;
+  for (const ch of text) {
+    if (ch === ' ') { out += ch; continue; }
+    if (k >= n) break;
+    out += ch; k++;
+  }
+  return out.replace(/ +$/, '');
+}
+const TOP = '이번 달 미션,', L2 = '적용 사례 정리하기', L3 = '내 자산에 등록됐어요';
+
+function s1State(f) {
+  show('L-s1');
+  applyEnter($('w1'), enterP(f, 0));
+  applyEnter($('w2'), enterP(f, 18));
+  applyEnter($('w3'), enterP(f, 36));
+  const h = $('headline'); h.style.transform = 'none';
+  const r = h.getBoundingClientRect();
+  const fromDy = C.y - (r.top + r.height / 2);
+  h.style.transform = `translateY(${lerp(fromDy, 0, prog(f, 54, 12, curveStandard))}px)`; // motion-travel 54–66
+  applyEnter($('c1'), enterP(f, 66)); // stagger duration-8
+  applyEnter($('c2'), enterP(f, 74));
+  applyEnter($('c3'), enterP(f, 82));
+}
+function rollState(f) { // S12 (375 · 148)
+  $('endbg').style.opacity = 1; show('L-roll'); applyEnter($('roll'), 1);
+  $('roll-top').textContent = typed(TOP, 375, f);        // ① 375 · 379 · … · 395
+  const line = $('roll-line'); line.style.opacity = 1;
+  if (f < 463) {
+    line.textContent = typed(L2, 407, f);                 // ② hold-glance 395–407 뒤 407 · … · 435
+    if (f >= 459) line.style.opacity = exitOp(f, 459);    // 아랫줄 motion-exit 459–463
+  } else {
+    line.textContent = typed(L3, 463, f);                 // ③ 463 · … · 495
+  }
+}
+
+function render(f) {
+  $('endbg').style.opacity = 0;
+  $('cam').style.transform = 'none';
+  $('phone-out').style.display = 'none';
+  missionState(0.5, '50% · 2/4 단계 완료');
+
+  if (f < 100) { // S1 (0 · 100)
+    s1State(f);
+  } else if (f < 154) { // S2 (100 · 54): S1 motion-exit 100–104 + 폰 motion-enter 100–106
+    if (f < 104) s1State(99);
+    const p = enterP(f, 100); phone('01-home', p, p);
+    if (f < 104) also('L-s1', exitOp(f, 100));
+  } else if (f < 158) { // S3 (154 · 4) 뛰어들기 duration-4 · curve-exit
+    diveState(HOME_CARD, '01-home', 'p-mission', prog(f, 154, 4, curveExit));
+  } else if (f < 182) { // S4 (158 · 24)
+    show('L-part'); onlyPart('p-mission'); mover(1);
+  } else if (f < 209) { // S5 (182 · 27): 진행 바 motion-travel 182–194, 글자 motion-swap 194–197
+    show('L-part'); onlyPart('p-mission'); mover(1);
+    missionState(lerp(0.5, 1, prog(f, 182, 12, curveStandard)), f >= 194 ? '100% · 4/4 단계 완료' : '50% · 2/4 단계 완료');
+  } else if (f < 221) { // S6 (209 · 12) 빠지기 duration-12 · curve-standard
+    missionState(1, '100% · 4/4 단계 완료');
+    diveState(HOME_CARD, '01-home', 'p-mission', 1 - prog(f, 209, 12, curveStandard));
+  } else if (f < 269) { // S7 (221 · 48)
+    phone('01-home');
+  } else if (f < 323) { // S8 (269 · 54): S7 화면 motion-exit 269–273 + 03 motion-enter 269–275, 아주 느리게 밀기 275–323
+    const p = enterP(f, 269); phone('03-mission', p, p);
+    cam(lerp(1, 1.05, prog(f, 275, 48, curveLinear)), C, C);
+    if (f < 273) { const o = $('phone-out'); o.style.display = 'block'; o.style.opacity = exitOp(f, 269); }
+  } else if (f < 327) { // S9 (323 · 4) 뛰어들기
+    diveState(MISSION_BTN, '03-mission', 'p-button', prog(f, 323, 4, curveExit));
+  } else if (f < 369) { // S10 (327 · 42): 버튼 motion-exit 327–331 + 폰 motion-enter 327–333, 밀기 345–369
+    const p = enterP(f, 327); phone('04-approved', p, p);
+    pushState(f);
+    if (f < 331) { onlyPart('p-button'); mover(1); also('L-part', exitOp(f, 327)); }
+  } else if (f < 375) { // S11 (369 · 6): 폰 motion-exit 369–373 + 바탕 투명 → 불투명만 (duration-6 · curve-enter). 글자 없음
+    phone('04-approved', exitOp(f, 369)); pushState(369);
+    $('endbg').style.opacity = prog(f, 369, 6, curveEnter);
+  } else if (f < 519) { // S12 (375 · 148)
+    rollState(f);
+  } else { // S13 (519 · 78): motion-enter 519–525 + S12 두 줄 motion-exit 519–523
+    if (f < 523) { rollState(518); }
+    $('endbg').style.opacity = 1; show('L-end');
+    applyEnter($('endcard'), enterP(f, 519));
+    if (f < 523) { also('L-roll', exitOp(f, 519)); }
+  }
+}
+const f = parseFloat(new URLSearchParams(location.search).get('f') || '0');
+window.addEventListener('load', () => document.fonts.ready.then(() => render(f)));
+</script>
+</body>
+</html>
